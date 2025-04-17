@@ -1,0 +1,111 @@
+// game.js
+
+let balance = 100000;
+let totalSpin = 0;
+let totalWin = 0;
+let totalBet = 0;
+let freeSpinCount = 0;
+
+const reels = [
+  document.getElementById('reel1'),
+  document.getElementById('reel2'),
+  document.getElementById('reel3'),
+  document.getElementById('reel4'),
+  document.getElementById('reel5')
+];
+
+const symbols = ['🍒', '🍋', '🔔', '💎', '⭐', '👑', '🎲', 'SC'];
+
+function updateUI() {
+  document.getElementById('balance').innerText = balance;
+  document.getElementById('totalSpin').innerText = totalSpin;
+  document.getElementById('totalWin').innerText = totalWin;
+  document.getElementById('totalBet').innerText = totalBet;
+  document.getElementById('freeSpinCount').innerText = freeSpinCount;
+}
+
+function getRandomSymbol() {
+  return symbols[Math.floor(Math.random() * symbols.length)];
+}
+
+function spinReels() {
+  return reels.map(() => getRandomSymbol());
+}
+
+function calculateWin(result, bet) {
+  const counts = {};
+  result.forEach(symbol => counts[symbol] = (counts[symbol] || 0) + 1);
+
+  if (counts['SC'] >= 3) freeSpinCount += 10;
+
+  let win = 0;
+  for (const sym in counts) {
+    if (counts[sym] >= 3 && sym !== 'SC') {
+      win += bet * counts[sym];
+    }
+  }
+  return win;
+}
+
+function playSpin() {
+  const bet = parseInt(document.getElementById('bet').value);
+  if (isNaN(bet) || bet < 400) return alert("Minimal bet 400!");
+
+  if (freeSpinCount > 0) {
+    freeSpinCount--;
+  } else {
+    if (balance < bet) return alert("Saldo tidak cukup!");
+    balance -= bet;
+    totalBet += bet;
+  }
+
+  const result = spinReels();
+  result.forEach((symbol, i) => reels[i].innerText = symbol);
+
+  const win = calculateWin(result, bet);
+  balance += win;
+  totalWin += win;
+  totalSpin++;
+
+  updateUI();
+}
+
+function deposit(amount) {
+  if (amount < 10000 || amount > 50000000) return alert("Deposit harus antara 10.000 - 50.000.000!");
+  balance += amount;
+  updateUI();
+}
+
+function withdraw(amount) {
+  if (amount < 50000 || amount > 5000000) return alert("Withdraw harus antara 50.000 - 5.000.000!");
+  if (balance < amount) return alert("Saldo tidak cukup!");
+  balance -= amount;
+  updateUI();
+}
+
+function buyFreeSpin() {
+  const bet = parseInt(document.getElementById('bet').value);
+  const price = bet * 100;
+  if (balance < price) return alert("Saldo tidak cukup untuk beli Free Spin!");
+  balance -= price;
+  freeSpinCount += 10;
+  updateUI();
+}
+
+let autoSpinning = false;
+function toggleAutoSpin() {
+  autoSpinning = !autoSpinning;
+  if (autoSpinning) autoSpinLoop();
+}
+
+function autoSpinLoop() {
+  if (!autoSpinning) return;
+  playSpin();
+  setTimeout(autoSpinLoop, 1000);
+}
+
+document.getElementById('spinBtn').onclick = playSpin;
+document.getElementById('buyBtn').onclick = buyFreeSpin;
+document.getElementById('autoSpinBtn').onclick = toggleAutoSpin;
+
+updateUI();
